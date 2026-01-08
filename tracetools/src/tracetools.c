@@ -417,6 +417,32 @@ DEFINE_TRACEPOINT(
   TRACEPOINT_ARGS(
     buffer))
 
+DEFINE_TRACEPOINT(
+  message_link_periodic_async,
+  TRACEPOINT_PARAMS(
+    const void ** subs,
+    const size_t num_subs,
+    const void ** pubs,
+    const size_t num_pubs),
+  TRACEPOINT_ARGS(
+    subs,
+    num_subs,
+    pubs,
+    num_pubs))
+
+DEFINE_TRACEPOINT(
+  message_link_partial_sync,
+  TRACEPOINT_PARAMS(
+    const void ** subs,
+    const size_t num_subs,
+    const void ** pubs,
+    const size_t num_pubs),
+  TRACEPOINT_ARGS(
+    subs,
+    num_subs,
+    pubs,
+    num_pubs))
+
 #ifndef _WIN32
 # pragma GCC diagnostic pop
 #else
