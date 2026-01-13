@@ -78,6 +78,8 @@ def _resolve_session_path(
 def init(
     *,
     session_name: str,
+    snapshot_mode: bool,
+    dual_session: bool,
     base_path: Optional[str],
     append_trace: bool,
     ros_events: List[str],
@@ -95,6 +97,8 @@ def init(
     Raises RuntimeError on failure, in which case the tracing session might still exist.
 
     :param session_name: the name of the session
+    :param snapshot_mode: whether this is a snapshot session
+    :param dual_session: whether this is part of a dual session
     :param base_path: the path to the directory in which to create the tracing session directory,
         or `None` for default
     :param append_trace: whether to append to the trace directory if it already exists, otherwise
@@ -122,6 +126,8 @@ def init(
         input('press enter to start...')
     trace_directory = lttng.lttng_init(
         session_name=session_name,
+        snapshot_mode=snapshot_mode,
+        dual_session=dual_session,
         base_path=base_path,
         append_trace=append_trace,
         ros_events=ros_events,
@@ -209,6 +215,8 @@ def trace(args: argparse.Namespace) -> int:
     def work() -> int:
         if not init(
             session_name=args.session_name,
+            snapshot_mode=args.snapshot_mode,
+            dual_session=args.dual_session,
             base_path=args.path,
             append_trace=args.append_trace,
             ros_events=args.events_ust,
@@ -230,13 +238,15 @@ def start(args: argparse.Namespace) -> int:
     On failure, the tracing session will not exist.
 
     :param args: the arguments parsed using
-        `tracetools_trace.tools.args.add_arguments_noninteractive`
+        `tracetools_trace.tools.args.add_arguments_noninteractive_configure`
     :return: the return code (0 if successful, 1 otherwise)
     """
     def work() -> int:
         return int(
             not init(
                 session_name=args.session_name,
+                snapshot_mode=args.snapshot_mode,
+                dual_session=args.dual_session,
                 base_path=args.path,
                 append_trace=args.append_trace,
                 ros_events=args.events_ust,
@@ -256,7 +266,7 @@ def stop(args: argparse.Namespace) -> int:
     On failure, the tracing session might still exist.
 
     :param args: the arguments parsed using
-        `tracetools_trace.tools.args.add_arguments_session_name`
+        `tracetools_trace.tools.args.add_arguments_noninteractive_control`
     :return: the return code (0 if successful, 1 otherwise)
     """
     def work() -> int:
@@ -272,7 +282,7 @@ def pause(args: argparse.Namespace) -> int:
     On failure, the tracing session might still exist.
 
     :param args: the arguments parsed using
-        `tracetools_trace.tools.args.add_arguments_session_name`
+        `tracetools_trace.tools.args.add_arguments_noninteractive_control`
     :return: the return code (0 if successful, 1 otherwise)
     """
     def work() -> int:
@@ -288,11 +298,30 @@ def resume(args: argparse.Namespace) -> int:
     On failure, the tracing session might still exist.
 
     :param args: the arguments parsed using
-        `tracetools_trace.tools.args.add_arguments_session_name`
+        `tracetools_trace.tools.args.add_arguments_noninteractive_control`
     :return: the return code (0 if successful, 1 otherwise)
     """
     def work() -> int:
         lttng.lttng_start(session_name=args.session_name)
+        return 0
+    return _do_work_and_report_error(work, args.session_name, do_cleanup=False)
+
+
+def record_snapshot(args: argparse.Namespace) -> int:
+    """
+    Record snapshot of a tracing session (created in snapshot mode).
+
+    On failure, the tracing session might still exist.
+
+    :param args: the arguments parsed using
+        `tracetools_trace.tools.args.add_arguments_noninteractive_control`
+    :return: the return code (0 if successful, 1 otherwise)
+    """
+    def work() -> int:
+        session_name = args.session_name
+        if args.dual_session:
+            session_name += path.SNAPSHOT_SESSION_SUFFIX
+        lttng.lttng_record_snapshot(session_name=session_name)
         return 0
     return _do_work_and_report_error(work, args.session_name, do_cleanup=False)
 
