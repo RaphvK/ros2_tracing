@@ -18,6 +18,7 @@
 import fnmatch
 import re
 import shlex
+from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -34,9 +35,14 @@ from launch.frontend import expose_action
 from launch.frontend import Parser
 from launch.launch_context import LaunchContext
 from launch.some_substitutions_type import SomeSubstitutionsType
+from launch.substitution import Substitution
+from launch.substitutions import IfElseSubstitution
 from launch.substitutions import TextSubstitution
 from launch.utilities import normalize_to_list_of_substitutions
 from launch.utilities import perform_substitutions
+from launch.utilities.type_utils import normalize_typed_substitution
+from launch.utilities.type_utils import NormalizedValueType
+from launch.utilities.type_utils import perform_typed_substitution
 from tracetools_trace.tools import lttng
 from tracetools_trace.tools import names
 from tracetools_trace.tools import path
@@ -427,6 +433,14 @@ class Trace(Action):
             } \
             if isinstance(self._context_fields, dict) \
             else [perform_substitutions(context, field) for field in self._context_fields]
+        )
+        subbuffersize_ust = perform_typed_substitution(context, self._subbuffer_size_ust, int)
+        subbuffersize_kernel = perform_typed_substitution(
+            context,
+            self._subbuffer_size_kernel,
+            int
+        )
+        self._ld_preload_actions = self._get_ld_preload_actions(events_ust)
 
         # Append '-snapshot' to the session name if pre-configuring a dual session
         if dual_session:
@@ -532,3 +546,27 @@ class Trace(Action):
             f'subbuffer_size_ust={self._subbuffer_size_ust}, '
             f'subbuffer_size_kernel={self._subbuffer_size_kernel})'
         )
+
+    class AppendTimestamp(Substitution):
+        """Substitution which appends a timestamp."""
+
+        def __init__(self, prefix: SomeSubstitutionsType) -> None:
+            super().__init__()
+            self._prefix = normalize_to_list_of_substitutions(prefix)
+
+        def perform(self, context: LaunchContext) -> Text:
+            return path.append_timestamp(perform_substitutions(context, self._prefix))
+
+        def describe(self) -> Text:
+            return f'AppendTimestamp({self._prefix})'
+
+    class TraceDirectory(Substitution):
+        """Substitution for the trace directory."""
+
+        def perform(self, context: LaunchContext) -> Text:
+            # This depends on the context.environment being os.environ, because
+            # get_tracing_directory() directly uses os.environ
+            return path.get_tracing_directory()
+
+        def describe(self) -> Text:
+            return 'TraceDirectory()'
