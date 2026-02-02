@@ -110,7 +110,6 @@ DEFAULT_INIT_EVENTS_ROS = [
     tracepoints.rclcpp_subscription_callback_added,
     tracepoints.rcl_service_init,
     tracepoints.rclcpp_service_callback_added,
-    tracepoints.rmw_client_init,
     tracepoints.rcl_client_init,
     tracepoints.rcl_timer_init,
     tracepoints.rclcpp_timer_callback_added,
