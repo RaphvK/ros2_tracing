@@ -78,21 +78,38 @@ class TestTraceAction(unittest.TestCase):
         tmpdir,
         *,
         session_name: Optional[str] = 'my-session-name',
+        snapshot_mode: bool = False,
         append_trace: bool = False,
         events_ust: List[str] = ['ros2:*', '*'],
         subbuffer_size_ust: int = 524288,
         subbuffer_size_kernel: int = 1048576,
     ) -> None:
         if session_name is not None:
-            self.assertEqual(session_name, action.session_name)
-        self.assertEqual(tmpdir, action.base_path)
-        self.assertTrue(action.trace_directory.startswith(tmpdir))
-        self.assertEqual(append_trace, action.append_trace)
-        self.assertEqual([], action.events_kernel)
-        self.assertEqual(events_ust, action.events_ust)
-        self.assertTrue(pathlib.Path(tmpdir).exists())
-        self.assertEqual(subbuffer_size_ust, action.subbuffer_size_ust)
-        self.assertEqual(subbuffer_size_kernel, action.subbuffer_size_kernel)
+            self.assertEqual(session_name, perform_substitutions(context, action.session_name))
+        if tmpdir is not None:
+            self.assertEqual(tmpdir, perform_substitutions(context, action.base_path))
+            assert action.trace_directory
+            self.assertTrue(action.trace_directory.startswith(tmpdir))
+            self.assertTrue(pathlib.Path(tmpdir).exists())
+        self.assertEqual(
+            snapshot_mode,
+            perform_typed_substitution(context, action.snapshot_mode, bool)
+        )
+        self.assertEqual(
+            append_trace,
+            perform_typed_substitution(context, action.append_trace, bool)
+        )
+        self.assertEqual(0, len(action.events_kernel))
+        self.assertEqual(
+            events_ust, [perform_substitutions(context, x) for x in action.events_ust])
+        self.assertEqual(
+            subbuffer_size_ust,
+            perform_typed_substitution(context, action.subbuffer_size_ust, int)
+        )
+        self.assertEqual(
+            subbuffer_size_kernel,
+            perform_typed_substitution(context, action.subbuffer_size_kernel, int)
+        )
 
     def test_action(self) -> None:
         tmpdir = tempfile.mkdtemp(prefix='TestTraceAction__test_action')
@@ -114,6 +131,27 @@ class TestTraceAction(unittest.TestCase):
 
         shutil.rmtree(tmpdir)
 
+    def test_action_snapshot_mode(self) -> None:
+        tmpdir = tempfile.mkdtemp(prefix='TestTraceAction__test_action_snapshot_mode')
+
+        action = Trace(
+            session_name='my-session-name',
+            snapshot_mode=True,
+            base_path=tmpdir,
+            events_kernel=[],
+            syscalls=[],
+            events_ust=[
+                'ros2:*',
+                '*',
+            ],
+            subbuffer_size_ust=524288,
+            subbuffer_size_kernel=1048576,
+        )
+        context = self._assert_launch_no_errors([action])
+        self._check_trace_action(action, context, tmpdir, snapshot_mode=True)
+
+        shutil.rmtree(tmpdir)
+
     def test_action_frontend_xml(self) -> None:
         tmpdir = tempfile.mkdtemp(prefix='TestTraceAction__test_frontend_xml')
 
@@ -122,6 +160,7 @@ class TestTraceAction(unittest.TestCase):
             <launch>
                 <trace
                     session-name="my-session-name"
+                    snapshot-mode="false"
                     append-timestamp="false"
                     base-path="{}"
                     append-trace="true"
@@ -150,6 +189,7 @@ class TestTraceAction(unittest.TestCase):
             launch:
             - trace:
                 session-name: my-session-name
+                snapshot-mode: false
                 append-timestamp: false
                 base-path: {}
                 append-trace: true
@@ -230,8 +270,35 @@ class TestTraceAction(unittest.TestCase):
             default_value='my-session-name',
             description='the session name',
         )
+        snapshot_mode_arg = DeclareLaunchArgument(
+            'snapshot-mode',
+            default_value='False',
+            description='whether to take a snapshot of the session',
+        )
+        append_timestamp_arg = DeclareLaunchArgument(
+            'append-timestamp',
+            default_value='False',
+            description='whether to append a timestamp to the session name',
+        )
+        append_trace_arg = DeclareLaunchArgument(
+            'append-trace',
+            default_value='False',
+            description='whether to append to an existing trace',
+        )
+        subbuffer_size_ust_arg = DeclareLaunchArgument(
+            'subbuffer-size-ust',
+            default_value='524288',
+            description='the subbuffer size for userspace traces',
+        )
+        subbuffer_size_kernel_arg = DeclareLaunchArgument(
+            'subbuffer-size-kernel',
+            default_value='1048576',
+            description='the subbuffer size for kernel traces',
+        )
         action = Trace(
             session_name=LaunchConfiguration(session_name_arg.name),
+            snapshot_mode=LaunchConfiguration(snapshot_mode_arg.name),
+            append_timestamp=LaunchConfiguration(append_timestamp_arg.name),
             base_path=TextSubstitution(text=tmpdir),
             events_kernel=[],
             events_ust=[
@@ -248,8 +315,15 @@ class TestTraceAction(unittest.TestCase):
             subbuffer_size_ust=524288,
             subbuffer_size_kernel=1048576,
         )
-        self._assert_launch_no_errors([session_name_arg, action])
-        self._check_trace_action(action, tmpdir)
+        context = self._assert_launch_no_errors([
+            session_name_arg,
+            snapshot_mode_arg,
+            append_timestamp_arg,
+            append_trace_arg,
+            subbuffer_size_ust_arg,
+            subbuffer_size_kernel_arg,
+            action
+        ])
 
         self.assertDictEqual(
             action.context_fields,
@@ -262,6 +336,99 @@ class TestTraceAction(unittest.TestCase):
         shutil.rmtree(tmpdir)
         del os.environ['TestTraceAction__event_ust']
         del os.environ['TestTraceAction__context_field']
+
+    def test_action_substitutions_frontend_xml(self) -> None:
+        tmpdir = tempfile.mkdtemp(prefix='TestTraceAction__test_action_substitutions_frontend_xml')
+
+        xml_file = textwrap.dedent(
+            r"""
+            <launch>
+                <arg name="session-name" default="my-session-name" />
+                <arg name="snapshot-mode" default="false" />
+                <arg name="append-timestamp" default="false" />
+                <arg name="base-path" default="{}" />
+                <arg name="append-trace" default="true" />
+                <arg name="events-ust-1" default="ros2:*" />
+                <arg name="events-ust-2" default="*" />
+                <arg name="subbuffer-size-ust" default="524288" />
+                <arg name="subbuffer-size-kernel" default="1048576" />
+                <trace
+                    session-name="$(var session-name)"
+                    append-timestamp="$(var append-timestamp)"
+                    base-path="$(var base-path)"
+                    append-trace="$(var append-trace)"
+                    events-kernel=""
+                    syscalls=""
+                    events-ust="$(var events-ust-1) $(var events-ust-2)"
+                    subbuffer-size-ust="$(var subbuffer-size-ust)"
+                    subbuffer-size-kernel="$(var subbuffer-size-kernel)"
+                />
+            </launch>
+            """.format(tmpdir)
+        )
+
+        trace_action = None
+        with io.StringIO(xml_file) as f:
+            trace_action, context = self._assert_launch_frontend_no_errors(f)
+
+        self._check_trace_action(trace_action, context, tmpdir, append_trace=True)
+
+        shutil.rmtree(tmpdir)
+
+    def test_action_substitutions_frontend_yaml(self) -> None:
+        tmpdir = tempfile.mkdtemp(
+            prefix='TestTraceAction__test_action_substitutions_frontend_yaml')
+
+        yaml_file = textwrap.dedent(
+            r"""
+            launch:
+            - arg:
+                name: session-name
+                default: my-session-name
+            - arg:
+                name: snapshot-mode
+                default: "false"
+            - arg:
+                name: append-timestamp
+                default: "false"
+            - arg:
+                name: base-path
+                default: "{}"
+            - arg:
+                name: append-trace
+                default: "true"
+            - arg:
+                name: events-ust-1
+                default: "ros2:*"
+            - arg:
+                name: events-ust-2
+                default: "*"
+            - arg:
+                name: subbuffer-size-ust
+                default: "524288"
+            - arg:
+                name: subbuffer-size-kernel
+                default: "1048576"
+            - trace:
+                session-name: "$(var session-name)"
+                append-timestamp: "$(var append-timestamp)"
+                base-path: "$(var base-path)"
+                append-trace: "$(var append-trace)"
+                events-kernel: ""
+                syscalls: ""
+                events-ust: "$(var events-ust-1) $(var events-ust-2)"
+                subbuffer-size-ust: "$(var subbuffer-size-ust)"
+                subbuffer-size-kernel: "$(var subbuffer-size-kernel)"
+            """.format(tmpdir)
+        )
+
+        trace_action = None
+        with io.StringIO(yaml_file) as f:
+            trace_action, context = self._assert_launch_frontend_no_errors(f)
+
+        self._check_trace_action(trace_action, context, tmpdir, append_trace=True)
+
+        shutil.rmtree(tmpdir)
 
     def test_action_ld_preload(self) -> None:
         tmpdir = tempfile.mkdtemp(prefix='TestTraceAction__test_action_ld_preload')
