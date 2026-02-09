@@ -220,13 +220,15 @@ TRACEPOINT_EVENT(
     const void *, rmw_subscription_handle_arg,
     const void *, message_arg,
     int64_t, source_timestamp_arg,
-    const bool, taken_arg
+    const bool, taken_arg,
+    size_t, payload_size_arg
   ),
   TP_FIELDS(
     ctf_integer_hex(const void *, rmw_subscription_handle, rmw_subscription_handle_arg)
     ctf_integer_hex(const void *, message, message_arg)
     ctf_integer(int64_t, source_timestamp, source_timestamp_arg)
     ctf_integer(int, taken, (taken_arg ? 1 : 0))
+    ctf_integer(size_t, payload_size, payload_size_arg)
   )
 )
 

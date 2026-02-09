@@ -216,12 +216,14 @@ DEFINE_TRACEPOINT(
     const void * rmw_subscription_handle,
     const void * message,
     int64_t source_timestamp,
-    const bool taken),
+    const bool taken,
+    size_t payload_size),
   TRACEPOINT_ARGS(
     rmw_subscription_handle,
     message,
     source_timestamp,
-    taken))
+    taken,
+    payload_size))
 
 DEFINE_TRACEPOINT(
   rcl_take,

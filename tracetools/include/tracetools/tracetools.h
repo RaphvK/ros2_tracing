@@ -337,13 +337,15 @@ _DECLARE_TRACEPOINT(
  * \param[in] source_timestamp the source timestamp of the message,
  *  or 0 (if no message or no info)
  * \param[in] taken whether a message was taken
+ * \param[in] payload_size the size of the message payload in bytes
  */
 _DECLARE_TRACEPOINT(
   rmw_take,
   const void * rmw_subscription_handle,
   const void * message,
   int64_t source_timestamp,
-  const bool taken)
+  const bool taken,
+  size_t payload_size)
 
 /// `rcl_take`
 /**
