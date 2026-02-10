@@ -69,6 +69,7 @@ DEFAULT_EVENTS_ROS = [
     tracepoints.rclcpp_publish,
     tracepoints.rclcpp_intra_publish,
     tracepoints.rcl_publish,
+    tracepoints.rmw_payload,
     tracepoints.rmw_publish,
     tracepoints.rmw_subscription_init,
     tracepoints.rcl_subscription_init,

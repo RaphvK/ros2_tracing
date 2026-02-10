@@ -215,6 +215,21 @@ TRACEPOINT_EVENT(
 
 TRACEPOINT_EVENT(
   TRACEPOINT_PROVIDER,
+  rmw_payload,
+  TP_ARGS(
+    const void *, rmw_subscription_handle_arg,
+    const void *, message_arg,
+    size_t, payload_size_arg
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, rmw_subscription_handle, rmw_subscription_handle_arg)
+    ctf_integer_hex(const void *, message, message_arg)
+    ctf_integer(size_t, payload_size, payload_size_arg)
+  )
+)
+
+TRACEPOINT_EVENT(
+  TRACEPOINT_PROVIDER,
   rmw_take,
   TP_ARGS(
     const void *, rmw_subscription_handle_arg,

@@ -326,6 +326,22 @@ _DECLARE_TRACEPOINT(
   const void * subscription,
   const void * callback)
 
+/// `rmw_payload`
+/**
+ * Payload info.
+ * Links a `rmw_subscription_t` handle to a pointer to a message being taken at the `rmw` level.
+ * Notes the payload of the message.
+ *
+ * \param[in] rmw_subscription_handle pointer to the subscription's `rmw_subscription_t` handle
+ * \param[in] message pointer to the message being taken
+ * \param[in] payload_size the size of the message payload in bytes
+ */
+_DECLARE_TRACEPOINT(
+  rmw_payload,
+  const void * rmw_subscription_handle,
+  const void * message,
+  size_t payload_size)
+
 /// `rmw_take`
 /**
  * Message taking.

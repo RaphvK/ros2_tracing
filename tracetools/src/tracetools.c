@@ -211,6 +211,17 @@ DEFINE_TRACEPOINT(
     callback))
 
 DEFINE_TRACEPOINT(
+  rmw_payload,
+  TRACEPOINT_PARAMS(
+    const void * rmw_subscription_handle,
+    const void * message,
+    size_t payload_size),
+  TRACEPOINT_ARGS(
+    rmw_subscription_handle,
+    message,
+    payload_size))
+
+DEFINE_TRACEPOINT(
   rmw_take,
   TRACEPOINT_PARAMS(
     const void * rmw_subscription_handle,
