@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.20)
 project(test_tracetools)
 
 # Default to C++17
@@ -13,7 +13,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-if(WIN32 OR APPLE OR ANDROID)
+if(WIN32 OR APPLE OR ANDROID OR BSD)
   set(DISABLED_DEFAULT ON)
 else()
   set(DISABLED_DEFAULT OFF)
@@ -39,6 +39,18 @@ if(BUILD_TESTING)
   find_package(rcpputils REQUIRED)
   find_package(std_msgs REQUIRED)
   find_package(std_srvs REQUIRED)
+
+  # Utils do not exist if TRACETOOLS_DISABLED
+  if(NOT TRACETOOLS_DISABLED)
+    find_package(tracetools REQUIRED)
+    find_package(ament_cmake_gtest REQUIRED)
+    ament_add_gtest(test_utils test/test_utils.cpp)
+    if(TARGET test_utils)
+      target_link_libraries(test_utils
+        tracetools::tracetools
+      )
+    endif()
+  endif()
 
   # The utility lib is needed even if TRACETOOLS_DISABLED; it's just empty
   add_library(${PROJECT_NAME}_mark_process src/mark_process.cpp)
@@ -183,18 +195,6 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 
-  # Utils do not exist if TRACETOOLS_DISABLED
-  if(NOT TRACETOOLS_DISABLED)
-    find_package(tracetools REQUIRED)
-    find_package(ament_cmake_gtest REQUIRED)
-    ament_add_gtest(test_utils test/test_utils.cpp)
-    if(TARGET test_utils)
-      target_link_libraries(test_utils
-        tracetools::tracetools
-      )
-    endif()
-  endif()
-
   # Only run tracing tests if instrumentation and tracepoints are included
   if(NOT TRACETOOLS_TRACEPOINTS_EXCLUDED)
     find_package(ament_cmake_pytest REQUIRED)
@@ -213,7 +213,7 @@ if(BUILD_TESTING)
     )
     foreach(_test_path ${_test_tracetools_pytest_tests})
       get_filename_component(_test_name ${_test_path} NAME_WE)
-      ament_add_pytest_test(${_test_name} ${_test_path}
+      ament_add_ros_isolated_pytest_test(${_test_name} ${_test_path}
         APPEND_ENV PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
         TIMEOUT 60
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -226,19 +226,22 @@ if(BUILD_TESTING)
       test/test_generic_subscription.py
       test/test_pub_sub.py
       test/test_publisher.py
+      test/test_service.py
       test/test_subscription.py
     )
     set(_test_tracetools_rmw_implementations
       rmw_connextdds
       rmw_cyclonedds_cpp
       rmw_fastrtps_cpp
+      rmw_fastrtps_dynamic_cpp
+      rmw_zenoh_cpp
     )
     get_available_rmw_implementations(rmw_implementations)
     foreach(_test_path ${_test_tracetools_pytest_tests_multi_rmw})
       get_filename_component(_test_name ${_test_path} NAME_WE)
       foreach(rmw_implementation ${_test_tracetools_rmw_implementations})
         if(rmw_implementation IN_LIST rmw_implementations)
-          ament_add_pytest_test(${_test_name}__${rmw_implementation} ${_test_path}
+          ament_add_ros_isolated_pytest_test(${_test_name}__${rmw_implementation} ${_test_path}
             ENV RMW_IMPLEMENTATION=${rmw_implementation}
             APPEND_ENV PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
             TIMEOUT 60

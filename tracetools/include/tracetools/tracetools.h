@@ -32,7 +32,7 @@
 #include <stdbool.h>
 
 #include "tracetools/config.h"
-#include "tracetools/visibility_control.hpp"
+#include "tracetools/visibility_control.h"
 
 #ifndef TRACETOOLS_DISABLED
 /**
@@ -45,22 +45,28 @@
 #  define _GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
 
 // *INDENT-OFF*
+#  define _FUNC_TRACEPOINT(event_name) \
+  (ros_trace_ ## event_name)
+#  define _FUNC_TRACEPOINT_ENABLED(event_name) \
+  (ros_trace_enabled_ ## event_name)
+#  define _FUNC_DO_TRACEPOINT(event_name) \
+  (ros_trace_do_ ## event_name)
 #  define _TRACEPOINT_NOARGS(event_name) \
-  (ros_trace_ ## event_name)()
+  _FUNC_TRACEPOINT(event_name)()
 #  define _TRACEPOINT_ARGS(event_name, ...) \
-  (ros_trace_ ## event_name)(__VA_ARGS__)
+  _FUNC_TRACEPOINT(event_name)(__VA_ARGS__)
 #  define _DO_TRACEPOINT_NOARGS(event_name) \
-  (ros_trace_do_ ## event_name)()
+  _FUNC_DO_TRACEPOINT(event_name)()
 #  define _DO_TRACEPOINT_ARGS(event_name, ...) \
-  (ros_trace_do_ ## event_name)(__VA_ARGS__)
+  _FUNC_DO_TRACEPOINT(event_name)(__VA_ARGS__)
 #  define _DECLARE_TRACEPOINT_NOARGS(event_name) \
-  TRACETOOLS_PUBLIC void ros_trace_ ## event_name(); \
-  TRACETOOLS_PUBLIC bool ros_trace_enabled_ ## event_name(); \
-  TRACETOOLS_PUBLIC void ros_trace_do_ ## event_name();
+  TRACETOOLS_PUBLIC void _FUNC_TRACEPOINT(event_name)(void); \
+  TRACETOOLS_PUBLIC bool _FUNC_TRACEPOINT_ENABLED(event_name)(void); \
+  TRACETOOLS_PUBLIC void _FUNC_DO_TRACEPOINT(event_name)(void);
 #  define _DECLARE_TRACEPOINT_ARGS(event_name, ...) \
-  TRACETOOLS_PUBLIC void ros_trace_ ## event_name(__VA_ARGS__); \
-  TRACETOOLS_PUBLIC bool ros_trace_enabled_ ## event_name(); \
-  TRACETOOLS_PUBLIC void ros_trace_do_ ## event_name(__VA_ARGS__);
+  TRACETOOLS_PUBLIC void _FUNC_TRACEPOINT(event_name)(__VA_ARGS__); \
+  TRACETOOLS_PUBLIC bool _FUNC_TRACEPOINT_ENABLED(event_name)(void); \
+  TRACETOOLS_PUBLIC void _FUNC_DO_TRACEPOINT(event_name)(__VA_ARGS__);
 
 #  define _GET_MACRO_TRACEPOINT(...) \
   _GET_MACRO( \
@@ -103,7 +109,7 @@
  * This is the preferred method over calling the underlying function directly.
  */
 #  define TRACETOOLS_TRACEPOINT_ENABLED(event_name) \
-  ros_trace_enabled_ ## event_name()
+  _FUNC_TRACEPOINT_ENABLED(event_name)()
 /// Call a tracepoint, without checking if it is enabled.
 /**
  * Combine this with `TRACEPOINT_ENABLED()` to check if a tracepoint is enabled before triggering
@@ -123,36 +129,6 @@
 #  define TRACETOOLS_DO_TRACEPOINT(...) ((void) (0))
 #  define _DECLARE_TRACEPOINT(...)
 #endif  // TRACETOOLS_DISABLED
-
-// TODO(christophebedard) remove in Rolling after J-turtle release
-#ifndef DOXYGEN_ONLY
-#  ifndef _WIN32
-#   define _DEPRECATED_WITH_MSG(msg) __attribute__((deprecated(msg)))
-#  else
-#   define _DEPRECATED_WITH_MSG(msg) __declspec(deprecated(msg))
-#  endif
-#else
-#  define _DEPRECATED_WITH_MSG(msg)
-#endif
-#define _DEPRECATED_MACRO_FUNCTION_DEFINITION(macro_name) \
-  static inline void \
-  _DEPRECATED_WITH_MSG("use TRACETOOLS_" #macro_name "() instead") \
-  _deprecated_macro_ ## macro_name(void) \
-  { \
-  }
-
-_DEPRECATED_MACRO_FUNCTION_DEFINITION(TRACEPOINT)
-#define TRACEPOINT(...) \
-  _deprecated_macro_TRACEPOINT(); \
-  TRACETOOLS_TRACEPOINT(__VA_ARGS__)
-_DEPRECATED_MACRO_FUNCTION_DEFINITION(TRACEPOINT_ENABLED)
-#define TRACEPOINT_ENABLED(...) \
-  _deprecated_macro_TRACEPOINT_ENABLED(); \
-  TRACETOOLS_TRACEPOINT_ENABLED(__VA_ARGS__)
-_DEPRECATED_MACRO_FUNCTION_DEFINITION(DO_TRACEPOINT)
-#define DO_TRACEPOINT(...) \
-  _deprecated_macro_DO_TRACEPOINT(); \
-  TRACETOOLS_DO_TRACEPOINT(__VA_ARGS__)
 // *INDENT-ON*
 
 #ifdef __cplusplus
@@ -164,7 +140,13 @@ extern "C"
 /**
  * \return `true` if tracing is enabled, `false` otherwise
  */
-TRACETOOLS_PUBLIC bool ros_trace_compile_status();
+TRACETOOLS_PUBLIC bool ros_trace_compile_status(void);
+
+/// Get tracing runtime status.
+/**
+ * \return `true` if tracing is enabled, `false` otherwise
+ */
+TRACETOOLS_PUBLIC bool ros_trace_runtime_status(void);
 
 /// `rcl_init`
 /**
@@ -256,8 +238,7 @@ _DECLARE_TRACEPOINT(
 /// `rcl_publish`
 /**
  * Message publication.
- * Links a `rcl_publisher_t` handle to a pointer to
- * a message being published at the `rcl` level.
+ * Links a `rcl_publisher_t` handle to a pointer to a message being published at the `rcl` level.
  *
  * \param[in] publisher_handle pointer to the publisher's `rcl_publisher_t` handle
  * \param[in] message pointer to the message being published
@@ -271,6 +252,7 @@ _DECLARE_TRACEPOINT(
 /**
  * Message publication.
  * Notes the pointer to the message being published at the `rmw` level.
+ * Also notes the source timestamp of the message.
  *
  * \param[in] rmw_publisher_handle pointer to the publisher's `rmw_publisher_t` handle
  * \param[in] message pointer to the message being published
@@ -347,12 +329,12 @@ _DECLARE_TRACEPOINT(
 /// `rmw_take`
 /**
  * Message taking.
- * Links a `rmw_subscription_t` handle to a pointer
- * to a message being taken at the `rmw` level.
+ * Links a `rmw_subscription_t` handle to a pointer to a message being taken at the `rmw` level.
+ * Notes the source timestamp of the message.
  *
  * \param[in] rmw_subscription_handle pointer to the subscription's `rmw_subscription_t` handle
  * \param[in] message pointer to the message being taken
- * \param[in] source_timestamp the source timestamp of the received message,
+ * \param[in] source_timestamp the source timestamp of the message,
  *  or 0 (if no message or no info)
  * \param[in] taken whether a message was taken
  */

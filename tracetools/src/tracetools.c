@@ -23,6 +23,10 @@
  * this fix gets merged: https://review.lttng.org/c/lttng-ust/+/9001
  */
 #ifndef TRACETOOLS_TRACEPOINTS_EXCLUDED
+# include <dlfcn.h>
+# include <stdio.h>
+# include <stdlib.h>
+
 # include "tracetools/tp_call.h"
 // *INDENT-OFF*
 # define _CONDITIONAL_TP(...) \
@@ -35,54 +39,52 @@
 # define _CONDITIONAL_TP(...) ((void) (0))
 # define _CONDITIONAL_TP_ENABLED(...) false
 # define _CONDITIONAL_DO_TP(...) ((void) (0))
-#endif
+#endif  // TRACETOOLS_TRACEPOINTS_EXCLUDED
 
 #define TRACEPOINT_ARGS(...) __VA_ARGS__
 #define TRACEPOINT_PARAMS(...) __VA_ARGS__
 
 #define DEFINE_TRACEPOINT(event_name, _TP_PARAMS, _TP_ARGS) \
-  void TRACETOOLS_TRACEPOINT(event_name, _TP_PARAMS) \
+  void _FUNC_TRACEPOINT(event_name)(_TP_PARAMS) \
   { \
     _CONDITIONAL_TP(event_name, _TP_ARGS); \
   } \
-  bool TRACETOOLS_TRACEPOINT_ENABLED(event_name) \
+  bool _FUNC_TRACEPOINT_ENABLED(event_name)(void) \
   { \
     return _CONDITIONAL_TP_ENABLED(event_name); \
   } \
-  void TRACETOOLS_DO_TRACEPOINT(event_name, _TP_PARAMS) \
+  void _FUNC_DO_TRACEPOINT(event_name)(_TP_PARAMS) \
   { \
     _CONDITIONAL_DO_TP(event_name, _TP_ARGS); \
   }
 #define DEFINE_TRACEPOINT_NO_ARGS(event_name) \
-  void TRACETOOLS_TRACEPOINT(event_name) \
+  void _FUNC_TRACEPOINT(event_name)(void) \
   { \
     _CONDITIONAL_TP(event_name); \
   } \
-  bool TRACETOOLS_TRACEPOINT_ENABLED(event_name) \
+  bool _FUNC_TRACEPOINT_ENABLED(event_name)(void) \
   { \
     return _CONDITIONAL_TP_ENABLED(event_name); \
   } \
-  void TRACETOOLS_DO_TRACEPOINT(event_name) \
+  void _FUNC_DO_TRACEPOINT(event_name)(void) \
   { \
     _CONDITIONAL_DO_TP(event_name); \
   }
 // *INDENT-ON*
 
-bool ros_trace_compile_status()
-{
-#ifndef TRACETOOLS_TRACEPOINTS_EXCLUDED
-  return true;
-#else
-  return false;
-#endif
-}
-
+// Ignore unused-parameters warning when tracepoints are excluded
 #ifndef _WIN32
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wunused-parameter"
 #else
 # pragma warning(push)
 # pragma warning(disable: 4100)
+#endif
+
+// Ignore zero-variadic-macro-arguments clang warnings caused by lttng-ust macros
+#ifdef __clang__
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #endif
 
 DEFINE_TRACEPOINT(
@@ -417,6 +419,67 @@ DEFINE_TRACEPOINT(
   TRACEPOINT_ARGS(
     buffer))
 
+#ifndef TRACETOOLS_TRACEPOINTS_EXCLUDED
+static void * tracetools_provider_handle = NULL;
+
+bool ros_trace_compile_status(void)
+{
+  return true;
+}
+
+bool ros_trace_runtime_status(void)
+{
+  return tracetools_provider_handle != NULL;
+}
+
+static bool get_boolean_env(const char *name)
+{
+  const char * value = getenv(name);
+  return value != NULL && strcmp(value, "1") == 0;
+}
+
+void __attribute__((constructor)) tracetools_init()
+{
+  const bool verbose = get_boolean_env("TRACETOOLS_VERBOSE");
+  if (get_boolean_env("TRACETOOLS_RUNTIME_DISABLE")) {
+    if (verbose) {
+      fprintf(stderr, "ROS 2 tracing disabled\n");
+    }
+    return;
+  }
+  tracetools_provider_handle = dlopen(TRACETOOLS_PROVIDER_SONAME, RTLD_NOW | RTLD_GLOBAL);
+  if (tracetools_provider_handle == NULL) {
+    fprintf(stderr, "Failed to load tracepoint provider for ROS 2 tracing: %s\n", dlerror());
+    if (verbose) {
+      fprintf(stderr, "ROS 2 tracing disabled\n");
+    }
+  }
+}
+
+void __attribute__((destructor)) tracetools_fini()
+{
+  if (tracetools_provider_handle != NULL) {
+    if (dlclose(tracetools_provider_handle) != 0) {
+      fprintf(stderr, "Failed to unload tracepoint provider for ROS 2 tracing: %s\n", dlerror());
+    }
+    tracetools_provider_handle = NULL;
+  }
+}
+#else
+bool ros_trace_compile_status(void)
+{
+  return false;
+}
+
+bool ros_trace_runtime_status(void)
+{
+  return false;
+}
+#endif  // TRACETOOLS_TRACEPOINTS_EXCLUDED
+
+#ifdef __clang__
+# pragma clang diagnostic pop
+#endif
 #ifndef _WIN32
 # pragma GCC diagnostic pop
 #else

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# flake8: noqa: A005
+
 """Module for trace command extension implementation."""
 
 from ros2cli.command import add_subparsers_on_demand
@@ -21,9 +23,9 @@ from tracetools_trace.trace import trace
 
 
 class TraceCommand(CommandExtension):
-    """Trace ROS 2 nodes to get information on their execution. The main 'trace' command requires user interaction; to trace non-interactively, use the 'start'/'stop'/'pause'/'resume' sub-commands."""  # noqa: E501
+    """Various tracing related sub-commands."""
 
-    def add_arguments(self, parser, cli_name) -> None:
+    def add_arguments(self, parser, cli_name, *, argv=None) -> None:
         self._subparser = parser
         args.add_arguments(parser)
 
