@@ -39,7 +39,7 @@ if(BUILD_TESTING)
   find_package(rcpputils REQUIRED)
   find_package(std_msgs REQUIRED)
   find_package(std_srvs REQUIRED)
-  
+
   # Utils do not exist if TRACETOOLS_DISABLED
   if(NOT TRACETOOLS_DISABLED)
     find_package(tracetools REQUIRED)
@@ -222,13 +222,11 @@ if(BUILD_TESTING)
 
     # Tests to run with all instrumented/supported rmw implementations
     set(_test_tracetools_pytest_tests_multi_rmw
-      test/test_client.py
       test/test_generic_pub_sub.py
       test/test_generic_subscription.py
       test/test_pub_sub.py
       test/test_publisher.py
       test/test_service.py
-      test/test_service_req_resp.py
       test/test_subscription.py
     )
     set(_test_tracetools_rmw_implementations

@@ -151,11 +151,6 @@ The following table summarizes the instrumentation and links to the correspondin
 |          | `rmw_subscription_init`              | [*Subscription creation*](#subscription-creation) |
 |          | `rmw_publish`                        | [*Message publishing*](#message-publishing) |
 |          | `rmw_take`                           | [*Subscription callbacks*](#subscription-callbacks) |
-|          | `rmw_client_init`                    | [*Client creation*](#client-creation) |
-|          | `rmw_take_request`                   | [*Service callbacks*](#service-callbacks) |
-|          | `rmw_send_response`                  | [*Service callbacks*](#service-callbacks) |
-|          | `rmw_send_request`                   | [*Client request/response*](#client-requestresponse) |
-|          | `rmw_take_response`                  | [*Client request/response*](#client-requestresponse) |
 
 ### General guidelines
 

@@ -69,7 +69,6 @@ DEFAULT_EVENTS_ROS = [
     tracepoints.rclcpp_publish,
     tracepoints.rclcpp_intra_publish,
     tracepoints.rcl_publish,
-    tracepoints.rmw_payload,
     tracepoints.rmw_publish,
     tracepoints.rmw_subscription_init,
     tracepoints.rcl_subscription_init,
@@ -80,12 +79,7 @@ DEFAULT_EVENTS_ROS = [
     tracepoints.rclcpp_take,
     tracepoints.rcl_service_init,
     tracepoints.rclcpp_service_callback_added,
-    tracepoints.rmw_take_request,
-    tracepoints.rmw_send_response,
-    tracepoints.rmw_client_init,
     tracepoints.rcl_client_init,
-    tracepoints.rmw_send_request,
-    tracepoints.rmw_take_response,
     tracepoints.rcl_timer_init,
     tracepoints.rclcpp_timer_callback_added,
     tracepoints.rclcpp_timer_link_node,
@@ -118,7 +112,6 @@ DEFAULT_INIT_EVENTS_ROS = [
     tracepoints.rclcpp_subscription_callback_added,
     tracepoints.rcl_service_init,
     tracepoints.rclcpp_service_callback_added,
-    tracepoints.rmw_client_init,
     tracepoints.rcl_client_init,
     tracepoints.rcl_timer_init,
     tracepoints.rclcpp_timer_callback_added,
@@ -130,29 +123,6 @@ DEFAULT_INIT_EVENTS_ROS = [
     tracepoints.rclcpp_construct_ring_buffer,
     tracepoints.message_link_periodic_async,
     tracepoints.message_link_partial_sync
-]
-
-DEFAULT_INIT_EVENTS_ROS = [
-    tracepoints.rcl_init,
-    tracepoints.rcl_node_init,
-    tracepoints.rmw_publisher_init,
-    tracepoints.rcl_publisher_init,
-    tracepoints.rmw_subscription_init,
-    tracepoints.rcl_subscription_init,
-    tracepoints.rclcpp_subscription_init,
-    tracepoints.rclcpp_subscription_callback_added,
-    tracepoints.rcl_service_init,
-    tracepoints.rclcpp_service_callback_added,
-    tracepoints.rmw_client_init,
-    tracepoints.rcl_client_init,
-    tracepoints.rcl_timer_init,
-    tracepoints.rclcpp_timer_callback_added,
-    tracepoints.rclcpp_timer_link_node,
-    tracepoints.rclcpp_callback_register,
-    tracepoints.rcl_lifecycle_state_machine_init,
-    tracepoints.rclcpp_ipb_to_subscription,
-    tracepoints.rclcpp_buffer_to_ipb,
-    tracepoints.rclcpp_construct_ring_buffer
 ]
 
 DEFAULT_EVENTS_UST = DEFAULT_EVENTS_ROS
