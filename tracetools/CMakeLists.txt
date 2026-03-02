@@ -15,7 +15,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_gen_version_h REQUIRED)
-find_package(ament_cmake_ros_core REQUIRED)
+find_package(ament_cmake_ros REQUIRED)
 
 if(WIN32 OR APPLE OR ANDROID OR BSD)
   set(DISABLED_DEFAULT ON)
