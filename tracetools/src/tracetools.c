@@ -521,6 +521,36 @@ DEFINE_TRACEPOINT(
     pubs,
     num_pubs))
 
+DEFINE_TRACEPOINT(
+  mqtt_client_ros2mqtt,
+  TRACEPOINT_PARAMS(
+    const char * ros_topic,
+    const char * mqtt_topic,
+    int64_t correlation_id,
+    const void * message,
+    const uint32_t message_size),
+  TRACEPOINT_ARGS(
+    ros_topic,
+    mqtt_topic,
+    correlation_id,
+    message,
+    message_size))
+
+DEFINE_TRACEPOINT(
+  mqtt_client_mqtt2ros,
+  TRACEPOINT_PARAMS(
+    const char * mqtt_topic,
+    const char * ros_topic,
+    int64_t correlation_id,
+    const void * message,
+    const uint32_t message_size),
+  TRACEPOINT_ARGS(
+    mqtt_topic,
+    ros_topic,
+    correlation_id,
+    message,
+    message_size))
+
 #ifndef TRACETOOLS_TRACEPOINTS_EXCLUDED
 static void * tracetools_provider_handle = NULL;
 

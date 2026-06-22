@@ -779,6 +779,48 @@ _DECLARE_TRACEPOINT(
   const void ** pubs,
   const size_t num_pubs)
 
+/// `mqtt_client_ros2mqtt`
+/**
+ * Message-flow annotation for the ROS-to-MQTT direction of an mqtt_client
+ * bridge. Binds the correlation ID carried through the MQTT broker to the local
+ * serialized-message instance, allowing the ros2_tracing message flow to be
+ * tracked across the (untraced) MQTT transport.
+ *
+ * \param[in] ros_topic the source ROS topic
+ * \param[in] mqtt_topic the destination MQTT topic
+ * \param[in] correlation_id DDS source timestamp (ns) of the bridged ROS message
+ * \param[in] message pointer to the serialized message buffer
+ * \param[in] message_size size of the serialized ROS message (bytes)
+ */
+_DECLARE_TRACEPOINT(
+  mqtt_client_ros2mqtt,
+  const char * ros_topic,
+  const char * mqtt_topic,
+  int64_t correlation_id,
+  const void * message,
+  const uint32_t message_size)
+
+/// `mqtt_client_mqtt2ros`
+/**
+ * Message-flow annotation for the MQTT-to-ROS direction of an mqtt_client
+ * bridge. Binds the correlation ID extracted from the MQTT payload to the local
+ * serialized-message instance about to be published, closing the ros2_tracing
+ * message flow across the (untraced) MQTT transport.
+ *
+ * \param[in] mqtt_topic the source MQTT topic
+ * \param[in] ros_topic the destination ROS topic
+ * \param[in] correlation_id correlation ID extracted from the MQTT payload (ns)
+ * \param[in] message pointer to the serialized message buffer to be published
+ * \param[in] message_size size of the serialized ROS message (bytes)
+ */
+_DECLARE_TRACEPOINT(
+  mqtt_client_mqtt2ros,
+  const char * mqtt_topic,
+  const char * ros_topic,
+  int64_t correlation_id,
+  const void * message,
+  const uint32_t message_size)
+
 #ifdef __cplusplus
 }
 #endif

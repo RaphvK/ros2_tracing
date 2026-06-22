@@ -644,6 +644,44 @@ TRACEPOINT_EVENT(
   )
 )
 
+TRACEPOINT_EVENT(
+  TRACEPOINT_PROVIDER,
+  mqtt_client_ros2mqtt,
+  TP_ARGS(
+    const char *, ros_topic_arg,
+    const char *, mqtt_topic_arg,
+    int64_t, correlation_id_arg,
+    const void *, message_arg,
+    const uint32_t, message_size_arg
+  ),
+  TP_FIELDS(
+    ctf_string(ros_topic, ros_topic_arg)
+    ctf_string(mqtt_topic, mqtt_topic_arg)
+    ctf_integer(int64_t, correlation_id, correlation_id_arg)
+    ctf_integer_hex(const void *, message, message_arg)
+    ctf_integer(const uint32_t, message_size, message_size_arg)
+  )
+)
+
+TRACEPOINT_EVENT(
+  TRACEPOINT_PROVIDER,
+  mqtt_client_mqtt2ros,
+  TP_ARGS(
+    const char *, mqtt_topic_arg,
+    const char *, ros_topic_arg,
+    int64_t, correlation_id_arg,
+    const void *, message_arg,
+    const uint32_t, message_size_arg
+  ),
+  TP_FIELDS(
+    ctf_string(mqtt_topic, mqtt_topic_arg)
+    ctf_string(ros_topic, ros_topic_arg)
+    ctf_integer(int64_t, correlation_id, correlation_id_arg)
+    ctf_integer_hex(const void *, message, message_arg)
+    ctf_integer(const uint32_t, message_size, message_size_arg)
+  )
+)
+
 #ifdef __clang__
 # pragma clang diagnostic pop
 #endif
